@@ -28,7 +28,7 @@ public class main {
 	   private static Audio audio = null;
 	   static float[] angle = { 0.0f };
 	   static float gyroTacho = 0;
-	   static int mode = -1; // 0 :  직진
+	   static int mode = 10; // 0 :  직진
 	   static boolean isBlack = false;
 	   static boolean[] anglesplus;
 	   static boolean[] anglesminus;
@@ -36,6 +36,8 @@ public class main {
 	   static int fowardcount = 0;
 	   static boolean turned = false;
 	   static boolean tooShortFoward = false;
+	   static int rotatenum = 0;
+	   static float wboundary = 0;
 
 
 	public static void main(String[] args) {
@@ -53,6 +55,7 @@ public class main {
 	      gyroSamples = gyro.getAngleMode();
 	      audio.systemSound(Audio.DOUBLE_BEEP);
 	   
+	      wboundary = (float) ((sample[0] + 0.04) / 2);
 		//foward();
 		
 		while(true) {
@@ -69,7 +72,7 @@ public class main {
 		
 		
 		//init
-		if(mode == -1) {
+		if(mode == 10) {
 			gyro.reset();
 			fowardcount =0;
 			mode =0;
@@ -79,7 +82,7 @@ public class main {
 			//reset gyro
 		fowardcount ++;
 			foward();
-			tooShortFoward = fowardcount <  200 ? true : false; //너무 짧은지 확
+			tooShortFoward = fowardcount <  100 ? true : false; //너무 짧은지 확
 			
 		}
 		
@@ -107,7 +110,7 @@ public class main {
 		fowardcount = 0; //초기
 			
 	//이미 180도 백스탭 밟았는지 확
-		if(turned) {
+		if(turned && getGyroAngle() < 183 && getGyroAngle() >177) {
 			//왼쪽으로 90도
 			rotateToAngle(-90);
 		}else {
@@ -153,13 +156,13 @@ public class main {
 	}
 	
 public static void rotateToAngle(int a) {
-	
+	rotatenum = a;
 	//이건 오른쪽으로 90도 돌때 해야하는 일
 	if(getGyroAngle() > a+3 || getGyroAngle() < a-3) {
 		rotate((a - getGyroAngle())*3,(int) (a - getGyroAngle()));
 	}else {
 	stopMove();
-	mode = -1;
+	mode = 10;
 }
 	
 }
@@ -167,12 +170,15 @@ public static void rotateToAngle(int a) {
 	public static void setDisplay(EV3 ev3, String ambient, String color) {
 		TextLCD lcd = ev3.getTextLCD();
 		Keys keys = ev3.getKeys();
+		lcd.clear();
 		lcd.drawString("Miro Ver 0.4.1207", 0, 0);
+		lcd.drawString("Rotate : " + rotatenum, 0, 1);
 		lcd.drawString("Ambient : " + ambient, 0, 2);
 		lcd.drawString("Color : " + color, 0, 3);
 		lcd.drawString("Speed : " + Motor.B.getSpeed() + ", " + Motor.C.getSpeed(), 0, 4);
 		lcd.drawString("Gyro : " + getGyroAngle(), 0, 5);
 		lcd.drawString("Mode : " +  mode, 0, 6);
+		lcd.drawString("WBoundary : " +  wboundary, 0, 7);
 
 	//	keys.waitForAnyPress();
 	}
