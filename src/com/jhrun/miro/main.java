@@ -28,7 +28,7 @@ public class main {
 	   private static Audio audio = null;
 	   static float[] angle = { 0.0f };
 	   static float gyroTacho = 0;
-	   static int mode = 10; // 0 :  직진
+	   static int mode = 9; // 0 :  직진
 	   static boolean isBlack = false;
 	   static boolean[] anglesplus;
 	   static boolean[] anglesminus;
@@ -55,7 +55,8 @@ public class main {
 	      gyroSamples = gyro.getAngleMode();
 	      audio.systemSound(Audio.DOUBLE_BEEP);
 	   
-	      wboundary = (float) ((sample[0] + 0.04) / 2);
+	      ambient.fetchSample(sample, 0);
+	      wboundary = (float) sample[0];
 		//foward();
 		
 		while(true) {
@@ -68,11 +69,11 @@ public class main {
 			//
 		//	foward();
 		//블랙일때
-		if(mode == 0 && isBlack) mode = 1;
+		if((mode == 0 ) && isBlack) mode = 1;
 		
 		
 		//init
-		if(mode == 10) {
+		if(mode == 9) {
 			gyro.reset();
 			fowardcount =0;
 			mode =0;
@@ -82,7 +83,7 @@ public class main {
 			//reset gyro
 		fowardcount ++;
 			foward();
-			tooShortFoward = fowardcount <  100 ? true : false; //너무 짧은지 확
+			tooShortFoward = fowardcount <  30 ? true : false; //너무 짧은지 확
 			
 		}
 		
@@ -107,12 +108,11 @@ public class main {
 			
 		if(tooShortFoward) {
 			//너무 짧은 시간내에 다시 부딪힌 경우
-		fowardcount = 0; //초기
 			
 	//이미 180도 백스탭 밟았는지 확
-		if(turned && getGyroAngle() < 183 && getGyroAngle() >177) {
+		if(turned && (getGyroAngle() == 180)) {
 			//왼쪽으로 90도
-			rotateToAngle(-90);
+			mode =3;
 		}else {
 			//오른쪽을 180도
 			rotateToAngle(180);
@@ -125,7 +125,7 @@ public class main {
 			turned =false;
 			//오른쪽을 90
 			rotateToAngle(90);
-			
+	
 			
 		}
 			
@@ -137,8 +137,34 @@ public class main {
 			
 		}
 		
-		//Mode3 오른쪽 방향이 정확한지 확인하기
+		//Mode3 다틀렸을시 왼쪽으로 돌
 		if(mode == 3) {
+			
+			
+			if(tooShortFoward) {
+				//너무 짧은 시간내에 다시 부딪힌 경우
+			fowardcount = 0; //초기
+			tooShortFoward = false;
+				
+			
+			if(turned) {
+				//왼쪽으로 90도
+				rotateToAngle(-90);
+			
+			}
+			
+				
+		
+				
+			}else {
+				turned =false;
+				//오른쪽을 90
+				rotateToAngle(90);
+				
+				
+			}
+				
+			
 			
 		}
 			
@@ -158,11 +184,11 @@ public class main {
 public static void rotateToAngle(int a) {
 	rotatenum = a;
 	//이건 오른쪽으로 90도 돌때 해야하는 일
-	if(getGyroAngle() > a+3 || getGyroAngle() < a-3) {
+	if((getGyroAngle() != a)) {
 		rotate((a - getGyroAngle())*3,(int) (a - getGyroAngle()));
 	}else {
 	stopMove();
-	mode = 10;
+	mode = 9;
 }
 	
 }
@@ -170,7 +196,7 @@ public static void rotateToAngle(int a) {
 	public static void setDisplay(EV3 ev3, String ambient, String color) {
 		TextLCD lcd = ev3.getTextLCD();
 		Keys keys = ev3.getKeys();
-		lcd.clear();
+		
 		lcd.drawString("Miro Ver 0.4.1207", 0, 0);
 		lcd.drawString("Rotate : " + rotatenum, 0, 1);
 		lcd.drawString("Ambient : " + ambient, 0, 2);
@@ -179,6 +205,7 @@ public static void rotateToAngle(int a) {
 		lcd.drawString("Gyro : " + getGyroAngle(), 0, 5);
 		lcd.drawString("Mode : " +  mode, 0, 6);
 		lcd.drawString("WBoundary : " +  wboundary, 0, 7);
+		lcd.refresh();
 
 	//	keys.waitForAnyPress();
 	}
