@@ -30,14 +30,29 @@ public class main {
 	   static float gyroTacho = 0;
 	   static int mode = 9; // 0 :  직진
 	   static boolean isBlack = false;
-	   static boolean[] anglesplus;
-	   static boolean[] anglesminus;
+	   static boolean[]rightangles;
+
 	   static int haveToRotateAngle = 0; //사용안함
 	   static int fowardcount = 0;
+	   static int backwardcount = 0;
 	   static boolean turned = false;
 	   static boolean tooShortFoward = false;
 	   static int rotatenum = 0;
 	   static float wboundary = 0;
+	   static boolean rotatelock = false;
+	  static float whiteam = 0;//하얀색
+	  static float lowest_color = 10;//낮은검은색
+	  static boolean checkedThisisJustLine = false;
+	  static int INIT_MODE = 9;
+	  static int NORMAL_MODE = 0;
+	  static int WHEN_BLACK_MODE = 1;
+	  static int JUST_LINE_MODE = 2;
+	  static int SIN_MODE = 3;
+	  static int NORMAL_ROTATE_MODE = 4;
+	  static int LEFT_ROTATE_MODE = 5;
+	  static boolean allowWriteLineCheckArray= false;
+	  static int trueCount = 0;
+
 
 
 	public static void main(String[] args) {
@@ -48,7 +63,9 @@ public class main {
 		SensorMode ambient = colorSensor.getAmbientMode();
 		float[] sample = new float[ambient.sampleSize()];
 		audio = ev3.getAudio();
-		 audio.systemSound(0);
+	      wboundary = setBoundary(ev3, ambient); //경계값 설정
+	      waitForStart(ev3);
+
 	      gyro = new EV3GyroSensor(SensorPort.S3);
 	     
 	   
@@ -56,89 +73,75 @@ public class main {
 	      audio.systemSound(Audio.DOUBLE_BEEP);
 	   
 	      ambient.fetchSample(sample, 0);
-	      wboundary = (float) sample[0];
+	 
 		//foward();
-		
-		while(true) {
 	
+	      
+	      //	컬러값 가져오기
+	     
+	      
+	      
+	
+		
+		
+	while(true) {
+			
 			ambient.fetchSample(sample, 0);
 			//ISBLACK?
-			isBlack =  sample[0] < 0.04;
+			isBlack =  sample[0] <= wboundary;
 			
 		setDisplay(ev3, String.valueOf(sample[0]), isBlack ? "black" : "white");
 			//
 		//	foward();
 		//블랙일때
-		if((mode == 0 ) && isBlack) mode = 1;
+	
+		
+		}
 		
 		
+		//colorSensor.close();
+	}
+	
+
+	
+	public static void init() {
+		
+		
+	
+		
+	}
+	
+	public static void waitForStart(EV3 ev3) {
+		 setDisplayMessage(ev3 ,"Wait For Start");
+	}
+	
+	public static void doWhenInit() {
 		//init
-		if(mode == 9) {
-			gyro.reset();
-			fowardcount =0;
-			mode =0;
-		}
-		
-		if(mode == 0) {
-			//reset gyro
-		fowardcount ++;
-			foward();
-			tooShortFoward = fowardcount <  30 ? true : false; //너무 짧은지 확
-			
-		}
-		
-	
-		
-		if(mode == 1) {
-			//WOW Its black! 검은 선을 만났을때 해야하는 
-			//stopMove();
-		
-			rotatea(-70);
-			
-			if(!isBlack) {
-				mode = 2;
-				
+				if(mode == INIT_MODE) {
+					//gyro.reset();
+					fowardcount =0;
+					mode =NORMAL_MODE;
+				}
 			}
-				
-		//break;
-		}
-		
-		if(mode == 2) {
-			
-			
-		if(tooShortFoward) {
-			//너무 짧은 시간내에 다시 부딪힌 경우
-			
-	//이미 180도 백스탭 밟았는지 확
-		if(turned && (getGyroAngle() == 180)) {
-			//왼쪽으로 90도
-			mode =3;
-		}else {
-			//오른쪽을 180도
-			rotateToAngle(180);
-			turned = true;
-		}
-		
 	
-			
-		}else {
-			turned =false;
-			//오른쪽을 90
-			rotateToAngle(90);
-	
-			
-		}
-			
-			
-			
-			
-			
-			
-			
-		}
+	public static float setBoundary(EV3 ev3, SensorMode ambient ) {
+		float[] sample = new float[ambient.sampleSize()];
+		float white = 0;
+		float black = 0;
 		
-		//Mode3 다틀렸을시 왼쪽으로 돌
-		if(mode == 3) {
+		
+	      ambient.fetchSample(sample, 0);
+	      white = sample[0];
+	      
+		 setDisplayMessage(ev3 ,"Set Black Color");
+	      ambient.fetchSample(sample, 0);
+		 black = sample[0];
+		 
+		return (white + black)/2;
+	}
+	
+	public static void doWhenLeftRotateMode() {
+	if(mode == LEFT_ROTATE_MODE) {
 			
 			
 			if(tooShortFoward) {
@@ -168,26 +171,138 @@ public class main {
 			
 		}
 			
-		
-		}
-		
-		
-		
-		
-		//colorSensor.close();
 	}
 	
-	public static void init() {
+	public static void doWhenRotateMode() {
+
+		if(mode == NORMAL_ROTATE_MODE) {
+			
+			
+		if(tooShortFoward) {
+			//너무 짧은 시간내에 다시 부딪힌 경우
+			
+	//이미 180도 백스탭 밟았는지 확
+		if(turned && (getGyroAngle() >= haveToRotateAngle -5 && getGyroAngle() <= haveToRotateAngle +5)) {
+			//왼쪽으로 90도
+			mode =LEFT_ROTATE_MODE;
+		}else {
+			//오른쪽을 180도
+			rotateToAngle(180);
+			turned = true;
+		}
 		
+	
+			
+		}else {
+			turned =false;
+			//오른쪽을 90
+			rotateToAngle(90);
+	
+			
+		}
+			
+			
+			
+			
+			
+			
+			
+		}
+	}
+	public static void doWhenNormalMode() {
+		if(mode == NORMAL_MODE) {
+			//reset gyro
+		fowardcount ++;
+			foward();
+			tooShortFoward = fowardcount <  35 ? true : false; //너무 짧은지 확
+			
+		}
+		
+	}
+	
+	public static void doWhenJustLineMode(){
+
+		if(mode == JUST_LINE_MODE) {
+			
+         rotatea(-70);
+         backwardcount++;
+			
+			if(!isBlack && backwardcount > 20) {
+				//mode = NORMAL_ROTATE_MODE;
+				backwardcount=0;
+				
+			}
+			
+		}
+	}
+	
+	public static void doWhenBlack() {
+		
+		if(mode == WHEN_BLACK_MODE) {
+			//WOW Its black! 검은 선을 만났을때 해야하는 
+		
+			//이 부분이 대각선인지 아니면 그냥 부딪친건지 확인한다. 오른쪽 바퀴를 굴려서 확인 약 45도
+			if( fowardcount == 0)initAngle();
+			if(fowardcount < 20) {
+				moveRightWheel(45);
+				rightangles[fowardcount] = isBlack;
+				fowardcount++;
+				
+			}
+		
+			//되돌아가기
+			if(backwardcount < 20 && fowardcount >= 20) {
+				
+				moveRightWheel(-45);
+				backwardcount++;
+			}
+
+			//되돌아가고 모드 설정
+			if(backwardcount >= 20 &&fowardcount >= 20) {
+				fowardcount = 0;
+				backwardcount = 0;
+				if(checkThisisJustLine(rightangles)) {
+					mode = JUST_LINE_MODE;
+				}else {
+					mode = SIN_MODE;
+				}
+			}
+			
+				
+		//break;
+		}
+		
+	}
+	
+	public static boolean checkThisisJustLine(boolean[] array) {
+		trueCount = 0;
+		for (int i = 0; i < array.length; i++) {
+		    if (array[i] /* or array[i] */) {
+		        trueCount++;
+		    }
+		    if (trueCount >= 15) {
+		        return false;
+		    }
+		    
+		}
+		return true;
 	}
 	
 public static void rotateToAngle(int a) {
 	rotatenum = a;
+	if(!rotatelock) {
+		haveToRotateAngle +=a;
+		rotatelock =true;
+	}
+	
 	//이건 오른쪽으로 90도 돌때 해야하는 일
-	if((getGyroAngle() != a)) {
-		rotate((a - getGyroAngle())*3,(int) (a - getGyroAngle()));
+	if(getGyroAngle()  < haveToRotateAngle -5 || getGyroAngle()  > haveToRotateAngle +5) {
+		rotate((haveToRotateAngle - getGyroAngle())*3,(int) (haveToRotateAngle - getGyroAngle()));
 	}else {
+		
 	stopMove();
+	rotatelock= false;
+	
 	mode = 9;
 }
 	
@@ -196,16 +311,31 @@ public static void rotateToAngle(int a) {
 	public static void setDisplay(EV3 ev3, String ambient, String color) {
 		TextLCD lcd = ev3.getTextLCD();
 		Keys keys = ev3.getKeys();
-		
+		lcd.setAutoRefresh(true);
 		lcd.drawString("Miro Ver 0.4.1207", 0, 0);
-		lcd.drawString("Rotate : " + rotatenum, 0, 1);
+		lcd.drawString("Rotate : " + haveToRotateAngle, 0, 1);
 		lcd.drawString("Ambient : " + ambient, 0, 2);
 		lcd.drawString("Color : " + color, 0, 3);
-		lcd.drawString("Speed : " + Motor.B.getSpeed() + ", " + Motor.C.getSpeed(), 0, 4);
+		lcd.drawString("Wboundary : " + wboundary, 0, 4);
+	//	lcd.drawString("Speed : " + Motor.B.getSpeed() + ", " + Motor.C.getSpeed(), 0, 4);
 		lcd.drawString("Gyro : " + getGyroAngle(), 0, 5);
 		lcd.drawString("Mode : " +  mode, 0, 6);
-		lcd.drawString("WBoundary : " +  wboundary, 0, 7);
+		lcd.drawString("TC : " +  trueCount, 0, 7);
+
+
+	//	keys.waitForAnyPress();
+	}
+	
+	public static void setDisplayMessage(EV3 ev3, String message) {
+		TextLCD lcd = ev3.getTextLCD();
+		Keys keys = ev3.getKeys();
+		
+		lcd.clear();
+		lcd.drawString("Miro Alert", 0, 0);
+		lcd.drawString(message, 0, 1);
 		lcd.refresh();
+		 audio.systemSound(0);
+		keys.waitForAnyPress();
 
 	//	keys.waitForAnyPress();
 	}
@@ -240,15 +370,37 @@ public static void rotateToAngle(int a) {
 		haveToRotateAngle += 90;
 	}
 	public static void initAngle() {
-		anglesplus = new boolean[360];
-		anglesminus = new boolean[360];
+		rightangles = new boolean[100];
 	}
 	
 	public static void rotatea(int a) {
-		 Motor.B.setSpeed(200);// 2 RPM720
-		   Motor.C.setSpeed(200);
+		 Motor.B.setSpeed(60);// 2 RPM720
+		   Motor.C.setSpeed(60);
 		   Motor.B.rotate(a, true);
 		   Motor.C.rotate(a, false);
+		//   Motor.B.stop
+		  // Motor.B.backward();
+		   //Motor.C.backward();
+//		   Motor.B.stop();
+//		  // Motor.B.get();
+//		   Motor.C.stop();
+	}
+	
+	public static void moveRightWheel(int a) {
+		   Motor.C.setSpeed(60);
+		   Motor.C.rotate(a, true);
+		//   Motor.B.stop
+		  // Motor.B.backward();
+		   //Motor.C.backward();
+//		   Motor.B.stop();
+//		  // Motor.B.get();
+//		   Motor.C.stop();
+	}
+	
+	public static void moveLeftWheel(int a) {
+		   Motor.B.setSpeed(60);
+		   Motor.B.rotate(a, false);
+		//   Motor.B.stop
 		  // Motor.B.backward();
 		   //Motor.C.backward();
 //		   Motor.B.stop();
@@ -266,6 +418,7 @@ public static void rotateToAngle(int a) {
 	
 	
 	public static void rotate(float f,int a) {
+		if(f > 270) f= 270;
 		 Motor.B.setSpeed(f);// 2 RPM
 		   Motor.C.setSpeed(f);
 		  // Motor.B.rotate(360);
