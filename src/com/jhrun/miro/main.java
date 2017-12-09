@@ -21,6 +21,9 @@ import lejos.utility.Delay;
 
 public class main {
 	
+	static String Appname = "Miro";
+	static String version = "0.8.1209";
+	
 	private static EV3GyroSensor gyro = null;
 	   private static SampleProvider gyroSamples = null;
 	   private UnregulatedMotor leftMotor = null;
@@ -82,7 +85,7 @@ public class main {
 	      
 	      
 	
-		
+			Keys keys = ev3.getKeys();
 		
 	while(true) {
 			
@@ -94,7 +97,15 @@ public class main {
 			//
 		//	foward();
 		//블랙일때
-	
+		if((int)(getGyroAngle() * 100) % 90 == 0) {
+		if(fowardcount < 200) {
+			continue;
+		}
+		fowardcount = 0;
+		}
+		rotateToAngle(90);
+
+		
 		
 		}
 		
@@ -290,6 +301,7 @@ public class main {
 	
 public static void rotateToAngle(int a) {
 	rotatenum = a;
+a= a- 1;
 	if(!rotatelock) {
 		haveToRotateAngle +=a;
 		rotatelock =true;
@@ -311,17 +323,17 @@ public static void rotateToAngle(int a) {
 	public static void setDisplay(EV3 ev3, String ambient, String color) {
 		TextLCD lcd = ev3.getTextLCD();
 		Keys keys = ev3.getKeys();
-		lcd.setAutoRefresh(true);
-		lcd.drawString("Miro Ver 0.4.1207", 0, 0);
+		
+		lcd.drawString(Appname + " Ver " + version, 0, 0);
 		lcd.drawString("Rotate : " + haveToRotateAngle, 0, 1);
 		lcd.drawString("Ambient : " + ambient, 0, 2);
 		lcd.drawString("Color : " + color, 0, 3);
-		lcd.drawString("Wboundary : " + wboundary, 0, 4);
+		lcd.drawString("Wb : " + wboundary, 0, 4);
 	//	lcd.drawString("Speed : " + Motor.B.getSpeed() + ", " + Motor.C.getSpeed(), 0, 4);
 		lcd.drawString("Gyro : " + getGyroAngle(), 0, 5);
 		lcd.drawString("Mode : " +  mode, 0, 6);
 		lcd.drawString("TC : " +  trueCount, 0, 7);
-
+lcd.refresh();
 
 	//	keys.waitForAnyPress();
 	}
@@ -336,7 +348,7 @@ public static void rotateToAngle(int a) {
 		lcd.refresh();
 		 audio.systemSound(0);
 		keys.waitForAnyPress();
-
+		lcd.clear();
 	//	keys.waitForAnyPress();
 	}
 	
