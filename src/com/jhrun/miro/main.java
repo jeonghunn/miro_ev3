@@ -9,11 +9,15 @@ import lejos.hardware.Keys;
 import lejos.hardware.ev3.EV3;
 import lejos.hardware.lcd.TextLCD;
 import lejos.hardware.motor.Motor;
+import lejos.hardware.motor.NXTRegulatedMotor;
 import lejos.hardware.motor.UnregulatedMotor;
 import lejos.hardware.port.SensorPort;
 import lejos.hardware.sensor.EV3ColorSensor;
 import lejos.hardware.sensor.EV3GyroSensor;
 import lejos.hardware.sensor.SensorMode;
+import lejos.internal.ev3.EV3LCDManager;
+import lejos.internal.ev3.EV3LCDManager.LCDLayer;
+import lejos.robotics.RegulatedMotor;
 import lejos.robotics.SampleProvider;
 import lejos.utility.Delay;
 
@@ -60,12 +64,14 @@ public class main {
 
 	public static void main(String[] args) {
 		EV3 ev3 = (EV3) BrickFinder.getLocal();
-	
+		disablePrintLog();
+		
 		EV3ColorSensor colorSensor = new EV3ColorSensor(SensorPort.S4);
 		
 		SensorMode ambient = colorSensor.getAmbientMode();
 		float[] sample = new float[ambient.sampleSize()];
 		audio = ev3.getAudio();
+		 setDisplayMessage(ev3 ,"Start Color Check");
 	      wboundary = setBoundary(ev3, ambient); //경계값 설정
 	      waitForStart(ev3);
 
@@ -81,8 +87,7 @@ public class main {
 	
 	      
 	      //	컬러값 가져오기
-	     
-	      
+		      
 	      
 	
 			Keys keys = ev3.getKeys();
@@ -91,23 +96,22 @@ public class main {
 			
 			ambient.fetchSample(sample, 0);
 			//ISBLACK?
-			isBlack =  sample[0] <= wboundary;
+			isBlack =  sample[0] < wboundary;
 			
 		setDisplay(ev3, String.valueOf(sample[0]), isBlack ? "black" : "white");
-			//
-		//	foward();
-		//블랙일때
-		if((int)(getGyroAngle() * 100) % 90 == 0) {
-		if(fowardcount < 200) {
-			continue;
-		}
-		fowardcount = 0;
-		}
-		rotateToAngle(90);
 
-		
+
+	doCheckBlack();
+	doWhenInit();
+doWhenNormalMode();
+doWhenBlack();
+doWhenJustLineMode();
+doWhenRotateMode();
+doWhenLeftRotateMode();
+			   
 		
 		}
+	
 		
 		
 		//colorSensor.close();
@@ -120,6 +124,12 @@ public class main {
 		
 	
 		
+	}
+	
+	public static void disablePrintLog() {
+		EV3LCDManager manager =EV3LCDManager.getLocalLCDManager();
+	      LCDLayer layer = manager.getLayer("STDOUT");
+	      layer.setVisible(false);
 	}
 	
 	public static void waitForStart(EV3 ev3) {
@@ -135,20 +145,33 @@ public class main {
 				}
 			}
 	
+	public static void doCheckBlack() {
+		if(mode == NORMAL_MODE && isBlack) mode =WHEN_BLACK_MODE;
+	}
+	 
 	public static float setBoundary(EV3 ev3, SensorMode ambient ) {
+		System.out.println("setColorboundary");
 		float[] sample = new float[ambient.sampleSize()];
-		float white = 0;
+		float white =20;
+	
 		float black = 0;
 		
 		
-	      ambient.fetchSample(sample, 0);
-	      white = sample[0];
+		for(int i = 0; i < 5; i++) {
+		
+			  ambient.fetchSample(sample, 0);
+		     if(white > sample[0]) white = sample[0];	
+		     System.out.println("setColorboundary White : " + white);
+		 	forward(300);
+		}
+		
+	    stopMove();
 	      
 		 setDisplayMessage(ev3 ,"Set Black Color");
 	      ambient.fetchSample(sample, 0);
 		 black = sample[0];
 		 
-		return (white + black)/2;
+		return (float) (((white + black)/2)) ;
 	}
 	
 	public static void doWhenLeftRotateMode() {
@@ -224,8 +247,8 @@ public class main {
 		if(mode == NORMAL_MODE) {
 			//reset gyro
 		fowardcount ++;
-			foward();
-			tooShortFoward = fowardcount <  35 ? true : false; //너무 짧은지 확
+			forward(10);
+			tooShortFoward = fowardcount <  5 ? true : false; //너무 짧은지 확
 			
 		}
 		
@@ -235,12 +258,12 @@ public class main {
 
 		if(mode == JUST_LINE_MODE) {
 			
-         rotatea(-70);
-         backwardcount++;
+         rotatea(-20);
+
 			
-			if(!isBlack && backwardcount > 20) {
-				//mode = NORMAL_ROTATE_MODE;
-				backwardcount=0;
+			if(!isBlack) {
+				mode = NORMAL_ROTATE_MODE;
+	
 				
 			}
 			
@@ -251,34 +274,34 @@ public class main {
 		
 		if(mode == WHEN_BLACK_MODE) {
 			//WOW Its black! 검은 선을 만났을때 해야하는 
-		
+			mode = JUST_LINE_MODE;
 			//이 부분이 대각선인지 아니면 그냥 부딪친건지 확인한다. 오른쪽 바퀴를 굴려서 확인 약 45도
-			if( fowardcount == 0)initAngle();
-			if(fowardcount < 20) {
-				moveRightWheel(45);
-				rightangles[fowardcount] = isBlack;
-				fowardcount++;
-				
-			}
+//			if( fowardcount == 0)initAngle();
+//			if(fowardcount < 20) {
+//				moveRightWheel(45);
+//				rightangles[fowardcount] = isBlack;
+//				fowardcount++;
+//				
+//			}
 		
-			//되돌아가기
-			if(backwardcount < 20 && fowardcount >= 20) {
-				
-				moveRightWheel(-45);
-				backwardcount++;
-			}
+//			//되돌아가기
+//			if(backwardcount < 20 && fowardcount >= 20) {
+//				
+//				moveRightWheel(-45);
+//				backwardcount++;
+//			}
 
 			//되돌아가고 모드 설정
-			if(backwardcount >= 20 &&fowardcount >= 20) {
-				fowardcount = 0;
-				backwardcount = 0;
-				if(checkThisisJustLine(rightangles)) {
-					mode = JUST_LINE_MODE;
-				}else {
-					mode = SIN_MODE;
-				}
-			}
-			
+//			if(backwardcount >= 20 &&fowardcount >= 20) {
+//				fowardcount = 0;
+//				backwardcount = 0;
+//				if(checkThisisJustLine(rightangles)) {
+//					mode = JUST_LINE_MODE;
+//				}else {
+//					mode = SIN_MODE;
+//				}
+//			}
+//			
 				
 		//break;
 		}
@@ -300,6 +323,10 @@ public class main {
 	}
 	
 public static void rotateToAngle(int a) {
+boolean progress = true;
+
+while (progress) {
+	
 	rotatenum = a;
 a= a- 1;
 	if(!rotatelock) {
@@ -316,8 +343,9 @@ a= a- 1;
 	rotatelock= false;
 	
 	mode = 9;
+	break;
 }
-	
+}
 }
 	
 	public static void setDisplay(EV3 ev3, String ambient, String color) {
@@ -354,7 +382,7 @@ lcd.refresh();
 	
 	
 
-	public static void foward() {
+	public static void fowardold() {
 		 Motor.B.setSpeed(400);// 2 RPM720
 		   Motor.C.setSpeed(400);
 		  // Motor.B.rotate(360);
@@ -365,6 +393,40 @@ lcd.refresh();
 //		  // Motor.B.get();
 //		   Motor.C.stop();
 	}
+	
+	public static void forward(long duration) {
+		System.out.println("forward : " +duration);
+	NXTRegulatedMotor left = Motor.B;
+	RegulatedMotor right = Motor.C;
+	
+	left.setSpeed(400);
+	right.setSpeed(400);
+	     left.synchronizeWith(new RegulatedMotor[]{right});
+	     left.startSynchronization();
+	     left.forward();
+	     right.forward();
+	     left.endSynchronization();
+	 //    Delay.msDelay(duration);
+	 //    left.stop(true);
+	   //  right.stop(true);
+	}
+	
+	public static void forwardNormal(long duration) {
+	NXTRegulatedMotor left = Motor.B;
+	RegulatedMotor right = Motor.C;
+	
+	left.setSpeed(400);
+	right.setSpeed(400);
+	     left.synchronizeWith(new RegulatedMotor[]{right});
+	     left.startSynchronization();
+	     left.forward();
+	     right.forward();
+	     left.endSynchronization();
+	     Delay.msDelay(duration);
+	     left.stop(true);
+	     right.stop(true);
+	}
+	
 	public static void backward() {
 		 Motor.B.setSpeed(400);// 2 RPM720
 		   Motor.C.setSpeed(400);
@@ -386,6 +448,7 @@ lcd.refresh();
 	}
 	
 	public static void rotatea(int a) {
+		System.out.println("Rotate Angle : " + a);
 		 Motor.B.setSpeed(60);// 2 RPM720
 		   Motor.C.setSpeed(60);
 		   Motor.B.rotate(a, true);
@@ -422,10 +485,10 @@ lcd.refresh();
 	
 	
 	public static void stopMove() {
-
-		   Motor.B.stop();
+System.out.println("stopMove");
+		   Motor.B.stop(true);
 		  // Motor.B.get();
-		   Motor.C.stop();
+		   Motor.C.stop(true);
 	}
 	
 	
