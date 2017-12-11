@@ -156,22 +156,24 @@ doWhenLeftRotateMode();
 	
 		float black = 0;
 		
-		
-		for(int i = 0; i < 5; i++) {
+		int i = 0;
+	while(i < 5) {
 		
 			  ambient.fetchSample(sample, 0);
 		     if(white > sample[0]) white = sample[0];	
 		     System.out.println("setColorboundary White : " + white);
-		 	forward(300);
+		 	forwardNormal(90);
+		 	i++;
 		}
 		
-	    stopMove();
+	
+	    if(i >= 5) stopMove();
 	      
 		 setDisplayMessage(ev3 ,"Set Black Color");
 	      ambient.fetchSample(sample, 0);
 		 black = sample[0];
 		 
-		return (float) (((white + black)/2)) ;
+		return (float) (Float.parseFloat(String.format("%.2f",((white + black)/2)))) ;
 	}
 	
 	public static void doWhenLeftRotateMode() {
