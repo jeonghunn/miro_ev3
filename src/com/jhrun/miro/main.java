@@ -218,6 +218,7 @@ doWhenLeftRotateMode();
 	//이미 180도 백스탭 밟았는지 확
 		if(turned && (getGyroAngle() >= haveToRotateAngle -5 && getGyroAngle() <= haveToRotateAngle +5)) {
 			//왼쪽으로 90도
+			
 			mode =LEFT_ROTATE_MODE;
 		}else {
 			//오른쪽을 180도
@@ -248,7 +249,7 @@ doWhenLeftRotateMode();
 			//reset gyro
 		fowardcount ++;
 			forward(10);
-			tooShortFoward = fowardcount <  5 ? true : false; //너무 짧은지 확
+			tooShortFoward = fowardcount <  23 ? true : false; //너무 짧은지 확
 			
 		}
 		
@@ -360,7 +361,7 @@ a= a- 1;
 	//	lcd.drawString("Speed : " + Motor.B.getSpeed() + ", " + Motor.C.getSpeed(), 0, 4);
 		lcd.drawString("Gyro : " + getGyroAngle(), 0, 5);
 		lcd.drawString("Mode : " +  mode, 0, 6);
-		lcd.drawString("TC : " +  trueCount, 0, 7);
+		lcd.drawString("FC : " +  fowardcount, 0, 7);
 lcd.refresh();
 
 	//	keys.waitForAnyPress();
