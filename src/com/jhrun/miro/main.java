@@ -59,6 +59,7 @@ public class main {
 	  static int LEFT_ROTATE_MODE = 5;
 	  static boolean allowWriteLineCheckArray= false;
 	  static int trueCount = 0;
+	  static boolean isFirstTime = true;
 
 
 
@@ -71,8 +72,9 @@ public class main {
 		SensorMode ambient = colorSensor.getAmbientMode();
 		float[] sample = new float[ambient.sampleSize()];
 		audio = ev3.getAudio();
-		 setDisplayMessage(ev3 ,"Start Color Check");
-	      wboundary = setBoundary(ev3, ambient); //경계값 설정
+		 setDisplayMessage(ev3 ,"Start Color Check ");
+	    //  wboundary = setBoundary(ev3, ambient); //경계값 설정
+		 wboundary = (float) 0.03;
 	      waitForStart(ev3);
 
 	      gyro = new EV3GyroSensor(SensorPort.S3);
@@ -97,7 +99,7 @@ public class main {
 			ambient.fetchSample(sample, 0);
 			//ISBLACK?
 			isBlack =  sample[0] < wboundary;
-			
+			System.out.println("Ambient : " + sample[0] + " isBlack? : "+ isBlack + " Mode : " + mode + " Turned : " + turned + " ForwardCount : " + fowardcount + " Samle : " + ambient.toString());
 		setDisplay(ev3, String.valueOf(sample[0]), isBlack ? "black" : "white");
 
 
@@ -140,7 +142,13 @@ doWhenLeftRotateMode();
 		//init
 				if(mode == INIT_MODE) {
 					//gyro.reset();
-					fowardcount =0;
+					if(isFirstTime) {
+						fowardcount = 1000;
+						isFirstTime =false;
+					}else {
+						fowardcount =0;
+					}
+				
 					mode =NORMAL_MODE;
 				}
 			}
@@ -151,6 +159,7 @@ doWhenLeftRotateMode();
 	 
 	public static float setBoundary(EV3 ev3, SensorMode ambient ) {
 		System.out.println("setColorboundary");
+		float result = 0;
 		float[] sample = new float[ambient.sampleSize()];
 		float white =20;
 	
@@ -173,7 +182,9 @@ doWhenLeftRotateMode();
 	      ambient.fetchSample(sample, 0);
 		 black = sample[0];
 		 
-		return (float) (Float.parseFloat(String.format("%.2f",((white + black)/2)))) ;
+		 result = (float) (Float.parseFloat(String.format("%.2f",((white + black)/2))));
+		 System.out.println("WBoundary : " + result);
+		return  result;
 	}
 	
 	public static void doWhenLeftRotateMode() {
@@ -251,7 +262,7 @@ doWhenLeftRotateMode();
 			//reset gyro
 		fowardcount ++;
 			forward(10);
-			tooShortFoward = fowardcount <  23 ? true : false; //너무 짧은지 확
+			tooShortFoward = fowardcount <  13 ? true : false; //너무 짧은지 확
 			
 		}
 		
@@ -398,7 +409,7 @@ lcd.refresh();
 	}
 	
 	public static void forward(long duration) {
-		System.out.println("forward : " +duration);
+		System.out.println("forward : " +duration );
 	NXTRegulatedMotor left = Motor.B;
 	RegulatedMotor right = Motor.C;
 	
